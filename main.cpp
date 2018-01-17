@@ -35,6 +35,41 @@ int main(int argc, const char* argv[]){
     sf::Image finalImage;
     finalImage.create(640,480,deepthImage.getPixelsPtr());
 
+    sf::Image patternbmp;
+    patternbmp.loadFromFile("res/pics/pattern1.png");
+//    patternbmp.loadFromFile("res/pics/pattern2.jpg");
+
+
+    int patHeight=patternbmp.getSize().y;
+
+     const int maxwidth=640*6;  // allow space for up to 6 times oversampling
+     int xdpi=75; int ydpi=75;
+
+     int yShift=ydpi/16;
+
+     int width=640;
+     int height=480;
+
+     int oversam=4; // oversampling ratio
+     int lookL[maxwidth]; int lookR[maxwidth];
+     sf::Color colour[maxwidth], col;
+     int lastlinked; int i;
+
+     int vwidth=width*oversam;
+
+     int obsDist=xdpi*12;
+     int eyeSep=xdpi*2.5; int veyeSep=eyeSep*oversam;
+
+     int maxdepth=xdpi*12;
+     int maxsep=(int)(((long)eyeSep*maxdepth)/(maxdepth+obsDist)); // pattern must be at
+                                                                   // least this wide
+     int vmaxsep=oversam*maxsep;
+
+     int s=vwidth/2-vmaxsep/2; int poffset=vmaxsep-(s % vmaxsep);
+
+     int featureZ, sep;
+     int x,y, left,right;
+     bool vis;
     
      sf::Clock timer;
 
@@ -81,46 +116,176 @@ int main(int argc, const char* argv[]){
 
 
 
-        const int maxwidth=640;
-        int xdpi=75;    // x-resolution of typical monitor
 
-        int width=640;  // width of display in pixels
-        int height=480; // height of display in pixels
+ /*        for (y=0; y<height; y++)
+         {
+          for (x=0; x<vwidth; x++)
+          { lookL[x]=x; lookR[x]=x; }
 
-        int lookL[maxwidth];
-        sf::Color colour[maxwidth]; // any type suitable for storing colours
+          for (x=0; x<vwidth; x++)
+          {
+           if ((x % oversam)==0) // SPEEDUP for oversampled pictures
+           {
+            featureZ= deepthImage.getPixel(x/oversam,y).r;//<depth of image at (x/oversam,y)>
 
-        int obsDist=xdpi*12;
-        int eyeSep=xdpi*2.5;
+            sep=(int)(((long)veyeSep*featureZ)/(featureZ+obsDist));
+           }
 
-        int featureZ, sep;
-        int x,y, left,right;
+           left=x-sep/2; right=left+sep;
 
-        for (y=0; y < height; y++) {
-            for (x=0; x<width; x++) { lookL[x]=x; }
+           vis=true;
 
-             for (x=0; x<width; x++) {
-                  featureZ = deepthImage.getPixel(x,y).r; // insert a function or refer to a depth-map here
-
-                  // the multiplication below is 'long' to prevent overflow errors
-                  sep=(int)(((long)eyeSep*featureZ)/(featureZ+obsDist));
-                  left=x-sep/2; right=left+sep;
-                  if ((left>=0) && (right<width)) lookL[right]=left;
+           if ((left>=0) && (right<vwidth))
+           {
+            if (lookL[right]!=right) // right pt already linked
+            {
+             if (lookL[right]<left) // deeper than current
+             {
+              lookR[lookL[right]]=lookL[right]; // break old links
+              lookL[right]=right;
              }
+             else vis=false;
+            }
 
-//       The second stage is to apply the pattern within the constraints imposed by the links. This is quite simple and the program speaks for itself (random-dot method):
+            if (lookR[left]!=left) // left pt already linked
+            {
+             if (lookR[left]>right) // deeper than current
+             {
+              lookL[lookR[left]]=lookR[left]; // break old links
+              lookR[left]=left;
+             }
+             else vis=false;
+            }
+            if (vis==true) { lookL[right]=left; lookR[left]=right; } // make link
+           }
+          }
 
-         for (x=0; x<width; x++) {
-              if (lookL[x]==x)
-                  colour[x]= sf::Color(std::rand()%255,std::rand()%255,std::rand()%255); // unconstrained
-              else
-                   colour[x]=colour[lookL[x]]; // constrained
+          lastlinked=-10; // dummy initial value
+
+          for (x=s; x<vwidth; x++)
+          {
+           if ((lookL[x]==x) || (lookL[x]<s))
+           {
+            if (lastlinked==(x-1)) colour[x]=colour[x-1];
+            else
+            {
+             colour[x]=patternbmp.getPixel(((x+poffset) % vmaxsep)/oversam,
+                                           (y+((x-s)/vmaxsep)*yShift) % patHeight);
+            }
+           }
+           else
+           {
+            colour[x]=colour[lookL[x]];
+
+            lastlinked=x; // keep track of the last pixel to be constrained
+           }
+          }
+
+          lastlinked=-10; // dummy initial value
+
+          for (x=s-1; x>=0; x--)
+          {
+           if (lookR[x]==x)
+           {
+            if (lastlinked==(x+1)) colour[x]=colour[x+1];
+            else
+            {
+             colour[x]=patternbmp.getPixel(((x+poffset) % vmaxsep)/oversam,
+                                        (y+((s-x)/vmaxsep+1)*yShift) % patHeight);
+            }
+           }
+           else
+           {
+            colour[x]=colour[lookR[x]];
+
+            lastlinked=x; // keep track of the last pixel to be constrained
+           }
+          }*/
+
+
+        for (y=0; y<height; y++)
+        {
+         for (x=0; x<vwidth; x++)
+         { lookL[x]=x; lookR[x]=x; }
+
+         for (x=0; x<vwidth; x++)
+         {
+          if ((x % oversam)==0) // SPEEDUP for oversampled pictures
+          {
+           featureZ= deepthImage.getPixel(x/oversam,y).r;
+
+           sep=(int)(((long)veyeSep*featureZ)/(featureZ+obsDist));
+          }
+
+          left=x-sep/2; right=left+sep;
+
+          vis=true;
+
+          if ((left>=0) && (right<vwidth))
+          {
+           if (lookL[right]!=right) // right pt already linked
+           {
+            if (lookL[right]<left) // deeper than current
+            {
+             lookR[lookL[right]]=lookL[right]; // break old links
+             lookL[right]=right;
+            }
+            else vis=false;
+           }
+
+           if (lookR[left]!=left) // left pt already linked
+           {
+            if (lookR[left]>right) // deeper than current
+            {
+             lookL[lookR[left]]=lookR[left]; // break old links
+             lookR[left]=left;
+            }
+            else vis=false;
+           }
+           if (vis==true) { lookL[right]=left; lookR[left]=right; } // make link
+          }
          }
 
-         for (x=0; x<width; x++) {
-              finalImage.setPixel(x,y, colour[x]);
+         lastlinked=-10; // dummy initial value
+
+         for (x=0; x<vwidth; x++)
+         {
+          if (lookL[x]==x)
+          {
+           if (lastlinked==(x-1)) colour[x]=colour[x-1];
+           else
+           {
+            colour[x]=patternbmp.getPixel((x % vmaxsep)/oversam,
+                                          (y+(x/vmaxsep)*yShift) % patHeight);
+           }
+          }
+          else
+          {
+           colour[x]=colour[lookL[x]];
+
+           lastlinked=x; // keep track of the last pixel to be constrained
+          }
          }
-        }
+
+          int red, green, blue;
+
+          for (x=0; x<vwidth; x+=oversam)
+          {
+           red=0; green=0; blue=0;
+
+           // use average colour of virtual pixels for screen pixel
+           for (i=x; i<(x+oversam); i++)
+           {
+            col=colour[i];
+            red+=col.r;
+            green+=col.g;
+            blue+=col.b;
+           }
+           col=sf::Color(red/oversam, green/oversam, blue/oversam);
+
+           finalImage.setPixel(x/oversam,y, col);
+          }
+         }
 
 
 
